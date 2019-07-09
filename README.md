@@ -27,7 +27,6 @@ func NewBaiduCrawler() *crawler.Crawler {
 		Business:         &BaiduBusiness{},
 		RequestGenerator: crawler.NewPeriodRequestGenerator(crawler.Day, 0, lastSyncTime, getRequestParametersFunc()),
 		DataUnmarshaler:  crawler.NewXpathUnmarshaler(0, 0, 1, -1),
-		Notification:     crawler.NewCombinedNotification(&dingNotification{}),
 	}
 }
 
@@ -54,7 +53,7 @@ func (b *BaiduBusiness) ProcessPeriodData() {
 	}
 }
 
-func (b *BaiduBusiness) GenReport() string {
+func (b *BaiduBusiness) SendReport() string {
 	println("total count", b.count)
 	return b.report.String()
 }
@@ -68,12 +67,4 @@ func getRequestParametersFunc() crawler.PeriodRequestParametersFunc {
 		return "GET", "https://www.baidu.com/s?" + encode, nil, nil
 	}
 }
-
-type dingNotification struct {
-}
-
-func (n *dingNotification) Send(s string) {
-	println("ding:", s)
-}
-
 ```

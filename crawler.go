@@ -8,14 +8,12 @@ import (
 type Crawler struct {
 	RequestGenerator
 	DataUnmarshaler
-	Notification
 	Business
 }
 
 func (c Crawler) Start() {
 	ex.Assert(c.RequestGenerator != nil, "request generator is nil")
 	ex.Assert(c.DataUnmarshaler != nil, "data unmarshaler is nil")
-	ex.Assert(c.Notification != nil, "notification is nil")
 	ex.Assert(c.Business != nil, "business definition is nil")
 	ex.Try(func() {
 		for true {
@@ -27,8 +25,7 @@ func (c Crawler) Start() {
 			e.Throw()
 		}
 	})
-
-	c.Send(c.GenReport())
+	c.SendReport()
 }
 
 type RequestGenerator interface {
@@ -40,8 +37,5 @@ type DataUnmarshaler interface {
 type Business interface {
 	NewPeriodData() interface{}
 	ProcessPeriodData()
-	GenReport() string
-}
-type Notification interface {
-	Send(n string)
+	SendReport() string
 }
