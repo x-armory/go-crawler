@@ -1,0 +1,13 @@
+# github.com/x-armory/go-exception v1.1.0
+github.com/x-armory/go-exception
+# github.com/x-armory/go-unmarshal-xpath v1.0.0
+github.com/x-armory/go-unmarshal-xpath
+# golang.org/x/net v0.0.0-20190628185345-da137c7871d7
+golang.org/x/net/html
+golang.org/x/net/html/atom
+# gopkg.in/go-playground/assert.v1 v1.2.1
+gopkg.in/go-playground/assert.v1
+# gopkg.in/go-playground/validator.v8 v8.18.2
+gopkg.in/go-playground/validator.v8
+# gopkg.in/xmlpath.v2 v2.0.0-20150820204837-860cbeca3ebc
+gopkg.in/xmlpath.v2
