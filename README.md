@@ -1,59 +1,79 @@
 # go-crawler
 get data easily to custom struct using annotations, 
 
-```text
-main（需要你自己完成）
-    配置：Crawlers
-    启动所有Crawler
 
-Crawler
-    配置：Name、Cron、RequestGenerator、DataUnmarshaler、DataProcessor、Notification
-    方法：
-        Start()
-            RequestGenerator.Gen()
-            DataUnmarshaler.unmarshal(request, dataType, this.DataProcessor.Validate())
-            DataProcessor.Process(data)
-            Notification.Send()
+##### sample:
 
-RequestGenerator
-    配置：GenParameters方法（返回Method、URL、Values、Header）
-    方法：
-        Gen()，调用抽象GenParameters()，生成http.Request
-    实现类：
-        TimeRequestGenerator
-            配置：上次同步时间，配置滚动周期，是否忽略周末（默认忽略），最早数据时间、Offset（重复同步N天内的数据，有更新）
-            方法：
-                GenParameters()，缓存上次同步时间，调用timeUtil.NextPeriod()，生成请求参数
-        TreeRequestGenerator
-            配置：根节点URL，递归层数，最大执行数（默认无限），根据字段注解，决定下一层URL字段和下一层数据结构类型
-            方法：
-                GenParameters()，缓存上次处理的数据，递归生成下次请求需要的Method、URL、Values、Header
-        ListRequestGenerator
-            配置：Method、URL、Header、Values列表
-            方法：
-                GenParameters()，根据配置循环返回Method、URL、Header、Values
+```go
+package main
 
-DataUnmarshaler
-    配置：文件类型（zip xls xlsx csv txt html）、unmarshal方法
-    方法：
-        unmarshal(*http.Request, *Type, func validate())
-    实现类：
-        XpathUnmarshaler
-        XlsUnmarshaler
-        XlsxUnmarshaler
-        CsvUnmarshaler
+import (
+	"bytes"
+	"fmt"
+	"github.com/x-armory/go-crawler"
+	"github.com/x-armory/go-exception"
+	"net/url"
+	"time"
+)
 
- DataProcessor
-    配置：Dao
-    方法：
-        Validate() 校验数据是否有效
-        Process()
-        GenReport()
+func main() {
+	NewBaiduCrawler().Start()
+}
 
- Notification
-    方法：
-        Send()
-    实现类：
-        DingTalk
-        WeiChart
+// custom crawler business definition
+func NewBaiduCrawler() *crawler.Crawler {
+	lastSyncTime := time.Now().AddDate(0, 0, -3)
+	return &crawler.Crawler{
+		Business:         &BaiduBusiness{},
+		RequestGenerator: crawler.NewPeriodRequestGenerator(crawler.Day, 0, lastSyncTime, getRequestParametersFunc()),
+		DataUnmarshaler:  crawler.NewXpathUnmarshaler(0, 0, 1, -1),
+		Notification:     crawler.NewCombinedNotification(&dingNotification{}),
+	}
+}
+
+type BaiduData struct {
+	Title string `xpath:"//*[@id='%d']/h3/a"`
+	Desc  string `xpath:"//*[@id='%d']/div[1]/text()"`
+}
+
+type BaiduBusiness struct {
+	data   []BaiduData
+	report bytes.Buffer
+	count  int
+}
+
+func (b *BaiduBusiness) NewPeriodData() interface{} {
+	b.data = []BaiduData{}
+	return &b.data
+}
+
+func (b *BaiduBusiness) ProcessPeriodData() {
+	for _, d := range b.data {
+		b.count++
+		fmt.Printf("%+v\n", d)
+	}
+}
+
+func (b *BaiduBusiness) GenReport() string {
+	println("total count", b.count)
+	return b.report.String()
+}
+
+func getRequestParametersFunc() crawler.PeriodRequestParametersFunc {
+	return func(start time.Time, end time.Time) (method string, urlStr string, headers map[string][]string, values map[string][]string) {
+		ex.Assert(!start.IsZero(), ex.Exception(crawler.NoMoreDataException, "", nil))
+		date := start.Format("2006-01-02")
+		println("sync date", date)
+		encode := url.Values(map[string][]string{"wd": {date}}).Encode()
+		return "GET", "https://www.baidu.com/s?" + encode, nil, nil
+	}
+}
+
+type dingNotification struct {
+}
+
+func (n *dingNotification) Send(s string) {
+	println("ding:", s)
+}
+
 ```
