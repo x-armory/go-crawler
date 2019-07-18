@@ -98,5 +98,8 @@ func (g *periodRequestGenerator) genRequest(method string, urlStr string, header
 	if request.Header.Get("Connection") == "" {
 		request.Header.Set("Connection", "keep-alive")
 	}
+	if request.Header.Get("Content-Type") == "" {
+		request.Header.Set("Content-Type", "application/json")
+	}
 	return request
 }
