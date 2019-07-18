@@ -20,19 +20,19 @@ func init() {
 	DefaultHttpClient = &http.Client{Transport: transport, Timeout: time.Minute * 10}
 }
 
-func NewXpathUnmarshaler(downloadIntervalMin int, downloadIntervalMax int, varStart int, varEnd int) *xpathUnmarshaler {
-	ex.Assert(downloadIntervalMin >= 0 && downloadIntervalMax >= 0, "download interval should >=0")
-	ex.Assert(downloadIntervalMax >= downloadIntervalMin, "downloadIntervalMax should not less than downloadIntervalMin")
+func NewXpathUnmarshaler(httpDelayMillisMin int, httpDelayMillisMax int, varStart int, varEnd int) *xpathUnmarshaler {
+	ex.Assert(httpDelayMillisMin >= 0 && httpDelayMillisMax >= 0, "http delay should >=0")
+	ex.Assert(httpDelayMillisMax >= httpDelayMillisMin, "httpDelayMillisMax should not less than httpDelayMillisMin")
 	return &xpathUnmarshaler{
-		downloadIntervalMin,
-		downloadIntervalMax,
+		httpDelayMillisMin,
+		httpDelayMillisMax,
 		xpath.XpathUnmarshaler{StartRow: varStart, EndRow: varEnd},
 	}
 }
 
 type xpathUnmarshaler struct {
-	downloadIntervalMin int
-	downloadIntervalMax int
+	httpDelayMillisMin int
+	httpDelayMillisMax int
 	xpath.XpathUnmarshaler
 }
 
@@ -46,14 +46,14 @@ func (u *xpathUnmarshaler) Unmarshal(req *http.Request, target interface{}) {
 	defer response.Body.Close()
 	node, e := xmlpath.ParseHTML(response.Body)
 	ex.AssertNoError(e)
-	u.XpathUnmarshal(node, target)
+	ex.AssertNoError(u.XpathUnmarshal(node, target), "unmarshal failed")
 
-	randInt := u.downloadIntervalMax - u.downloadIntervalMin
+	randInt := u.httpDelayMillisMax - u.httpDelayMillisMin
 	if randInt > 0 {
 		randInt = rand.Intn(randInt)
 	}
-	sleepSeconds := randInt + u.downloadIntervalMin
-	if sleepSeconds > 0 {
-		time.Sleep(time.Second * time.Duration(sleepSeconds))
+	delayMillis := randInt + u.httpDelayMillisMin
+	if delayMillis > 0 {
+		time.Sleep(time.Millisecond * time.Duration(delayMillis))
 	}
 }
