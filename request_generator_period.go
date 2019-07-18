@@ -16,8 +16,8 @@ const (
 	Day
 )
 
-func NewPeriodRequestGenerator(syncDuration SyncDuration, offset int, lastSyncTIme time.Time, parametersFunc PeriodRequestParametersFunc) *periodRequestGenerator {
-	g := &periodRequestGenerator{syncDuration, offset, lastSyncTIme, parametersFunc}
+func NewPeriodRequestGenerator(syncDuration SyncDuration, offset int, lastSyncTIme time.Time, parametersFunc PeriodRequestParametersFunc, ignoreWeekend bool) *periodRequestGenerator {
+	g := &periodRequestGenerator{syncDuration, offset, lastSyncTIme, parametersFunc, ignoreWeekend}
 	g.lastSyncTime = g.lastSyncTime.AddDate(0, 0, g.offset+1)
 	switch g.duration {
 	case Year:
@@ -35,6 +35,7 @@ type periodRequestGenerator struct {
 	offset         int
 	lastSyncTime   time.Time
 	parametersFunc PeriodRequestParametersFunc
+	ignoreWeekend  bool //only work for day period
 }
 
 type PeriodRequestParametersFunc func(start time.Time, end time.Time) (method string, urlStr string, headers map[string][]string, values map[string][]string)
@@ -57,8 +58,13 @@ func (g *periodRequestGenerator) genNextPeriod() (start time.Time, end time.Time
 		g.lastSyncTime = g.lastSyncTime.AddDate(0, 1, 0)
 		end2 = g.lastSyncTime.AddDate(0, 1, -1)
 	case Day:
-		g.lastSyncTime = g.lastSyncTime.AddDate(0, 0, 1)
-		end2 = g.lastSyncTime
+		for true {
+			g.lastSyncTime = g.lastSyncTime.AddDate(0, 0, 1)
+			end2 = g.lastSyncTime
+			if g.lastSyncTime.Weekday() >= 1 && g.lastSyncTime.Weekday() <= 5 {
+				break
+			}
+		}
 	}
 	if g.lastSyncTime.After(now) {
 		return time.Time{}, time.Time{}
