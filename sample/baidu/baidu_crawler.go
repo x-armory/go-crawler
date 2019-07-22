@@ -46,7 +46,7 @@ func (b *BaiduBusiness) ProcessPeriodData() {
 	}
 }
 
-func (b *BaiduBusiness) SendReport() string {
+func (b *BaiduBusiness) Finish() string {
 	println("total count", b.count)
 	return b.report.String()
 }
