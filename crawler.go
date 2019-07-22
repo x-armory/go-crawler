@@ -25,7 +25,7 @@ func (c Crawler) Start() {
 			e.Throw()
 		}
 	})
-	c.SendReport()
+	c.Finish()
 }
 
 type RequestGenerator interface {
@@ -37,5 +37,5 @@ type DataUnmarshaler interface {
 type Business interface {
 	NewPeriodData() interface{}
 	ProcessPeriodData()
-	SendReport() string
+	Finish() string
 }
