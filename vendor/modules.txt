@@ -1,4 +1,4 @@
-# github.com/x-armory/go-exception v1.1.0
+# github.com/x-armory/go-exception v1.2.1
 github.com/x-armory/go-exception
 # github.com/x-armory/go-unmarshal-xpath v1.0.0
 github.com/x-armory/go-unmarshal-xpath
