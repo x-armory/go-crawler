@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -19,11 +20,13 @@ func init() {
 		TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
 		TLSHandshakeTimeout: time.Minute * 10,
 	}
-	proxy := os.Getenv("http_proxy")
-	proxyUrl, err := url.Parse(proxy)
-	if err == nil {
-		transport.Proxy = http.ProxyURL(proxyUrl)
-		println("use proxy", proxy)
+	proxy := strings.TrimSpace(os.Getenv("http_proxy"))
+	if proxy != "" {
+		proxyUrl, err := url.Parse(proxy)
+		if err == nil {
+			transport.Proxy = http.ProxyURL(proxyUrl)
+			println("use proxy", proxy)
+		}
 	}
 	DefaultHttpClient = &http.Client{Transport: transport, Timeout: time.Minute * 10}
 }
