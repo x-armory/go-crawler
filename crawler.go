@@ -44,5 +44,5 @@ type Business interface {
 	NewPeriodData() interface{}
 	ProcessPeriodData()
 	Finish()
-	OnError(err ex.ExceptionClass)
+	OnError(err *ex.ExceptionClass)
 }
