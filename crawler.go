@@ -22,7 +22,13 @@ func (c Crawler) Start() {
 		}
 	}).SafeCatch(func(err interface{}) {
 		if e := ex.Wrap(err); e.Code() != NoMoreDataException {
-			e.Throw()
+			ex.Try(func() {
+				c.OnError(e)
+			}).SafeCatch(func(err interface{}) {
+				if err != nil {
+					ex.Wrap(err).PrintErrorStack()
+				}
+			})
 		}
 	})
 	c.Finish()
@@ -37,5 +43,6 @@ type DataUnmarshaler interface {
 type Business interface {
 	NewPeriodData() interface{}
 	ProcessPeriodData()
-	Finish() string
+	Finish()
+	OnError(err interface{})
 }
