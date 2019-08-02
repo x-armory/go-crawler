@@ -23,6 +23,7 @@ func init() {
 	proxyUrl, err := url.Parse(proxy)
 	if err == nil {
 		transport.Proxy = http.ProxyURL(proxyUrl)
+		println("use proxy", proxy)
 	}
 	DefaultHttpClient = &http.Client{Transport: transport, Timeout: time.Minute * 10}
 }
