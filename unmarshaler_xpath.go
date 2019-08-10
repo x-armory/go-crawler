@@ -1,35 +1,14 @@
 package crawler
 
 import (
-	"crypto/tls"
+	"github.com/x-armory/go-crawler/util"
 	"github.com/x-armory/go-exception"
 	"github.com/x-armory/go-unmarshal-xpath"
 	"gopkg.in/xmlpath.v2"
 	"math/rand"
 	"net/http"
-	"net/url"
-	"os"
-	"strings"
 	"time"
 )
-
-var DefaultHttpClient *http.Client
-
-func init() {
-	transport := &http.Transport{
-		TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
-		TLSHandshakeTimeout: time.Minute * 10,
-	}
-	proxy := strings.TrimSpace(os.Getenv("http_proxy"))
-	if proxy != "" {
-		proxyUrl, err := url.Parse(proxy)
-		if err == nil {
-			transport.Proxy = http.ProxyURL(proxyUrl)
-			println("use proxy", proxy)
-		}
-	}
-	DefaultHttpClient = &http.Client{Transport: transport, Timeout: time.Minute * 10}
-}
 
 func NewXpathUnmarshaler(httpDelayMillisMin int, httpDelayMillisMax int, varStart int, varEnd int) *xpathUnmarshaler {
 	ex.Assert(httpDelayMillisMin >= 0 && httpDelayMillisMax >= 0, "http delay should >=0")
@@ -50,7 +29,7 @@ type xpathUnmarshaler struct {
 func (u *xpathUnmarshaler) Unmarshal(req *http.Request, target interface{}) {
 	ex.Assert(req != nil, "request is nil")
 	ex.Assert(target != nil, "business data is nil")
-	response, e := DefaultHttpClient.Do(req)
+	response, e := util.DefaultHttpClient.Do(req)
 	ex.AssertNoError(e)
 	ex.Assert(response.Body != nil, "response body is nil")
 	ex.Assert(response.StatusCode < 400, "http error code %d", response.StatusCode)
