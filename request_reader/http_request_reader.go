@@ -10,7 +10,7 @@ import (
 var DefaultHttpRequestReader = &HttpRequestReader{util.DefaultHttpClient}
 
 type HttpRequestReader struct {
-	client *http.Client
+	Client *http.Client
 }
 
 func (r *HttpRequestReader) ReadRequest(req interface{}) io.Reader {
@@ -18,7 +18,7 @@ func (r *HttpRequestReader) ReadRequest(req interface{}) io.Reader {
 	if !ok {
 		ex.Wrap("not supported parameter type").Throw()
 	}
-	response, e := r.client.Do(request)
+	response, e := r.Client.Do(request)
 	ex.AssertNoError(e, "http do request failed")
 	return response.Body
 }

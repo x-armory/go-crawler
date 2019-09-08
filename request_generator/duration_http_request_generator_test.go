@@ -10,7 +10,7 @@ func TestDurationHttpRequestGenerator_Gen_Daily_FirstDayOfMonth(t *testing.T) {
 	lastSyncDate, _ := time.Parse("2006-01-02", "2019-01-01")
 	exceptedStart, _ := time.Parse("2006-01-02", "2019-01-02")
 	exceptedEnd, _ := time.Parse("2006-01-02", "2019-01-02")
-	generator := NewDurationHttpRequestGenerator(Day, 0, lastSyncDate, getDurationHttpRequestParametersFunc(), true)
+	generator := &DurationHttpRequestGenerator{Duration: Day, LastTime: lastSyncDate, IgnoreWeekend: true, ParametersFunc: getDurationHttpRequestParametersFunc()}
 	start, end := generator.NextDuration()
 	assert.Equal(t, start, exceptedStart)
 	assert.Equal(t, end, exceptedEnd)
@@ -20,7 +20,7 @@ func TestDurationHttpRequestGenerator_Gen_Daily_Weekend(t *testing.T) {
 	lastSyncDate, _ := time.Parse("2006-01-02", "2019-01-04")
 	exceptedStart, _ := time.Parse("2006-01-02", "2019-01-07")
 	exceptedEnd, _ := time.Parse("2006-01-02", "2019-01-07")
-	generator := NewDurationHttpRequestGenerator(Day, 0, lastSyncDate, getDurationHttpRequestParametersFunc(), true)
+	generator := &DurationHttpRequestGenerator{Duration: Day, LastTime: lastSyncDate, IgnoreWeekend: true, ParametersFunc: getDurationHttpRequestParametersFunc()}
 	start, end := generator.NextDuration()
 	assert.Equal(t, start, exceptedStart)
 	assert.Equal(t, end, exceptedEnd)
@@ -30,7 +30,7 @@ func TestDurationHttpRequestGenerator_Gen_Daily_Offset_Pre_FirstDayOfMonth(t *te
 	lastSyncDate, _ := time.Parse("2006-01-02", "2019-01-01")
 	exceptedStart, _ := time.Parse("2006-01-02", "2019-01-01")
 	exceptedEnd, _ := time.Parse("2006-01-02", "2019-01-01")
-	generator := NewDurationHttpRequestGenerator(Day, -1, lastSyncDate, getDurationHttpRequestParametersFunc(), true)
+	generator := &DurationHttpRequestGenerator{Duration: Day, Offset: -1, LastTime: lastSyncDate, IgnoreWeekend: true, ParametersFunc: getDurationHttpRequestParametersFunc()}
 	start, end := generator.NextDuration()
 	assert.Equal(t, start, exceptedStart)
 	assert.Equal(t, end, exceptedEnd)
@@ -39,7 +39,7 @@ func TestDurationHttpRequestGenerator_Gen_Daily_Offset_Post_FirstDayOfMonth(t *t
 	lastSyncDate, _ := time.Parse("2006-01-02", "2019-01-01")
 	exceptedStart, _ := time.Parse("2006-01-02", "2019-01-03")
 	exceptedEnd, _ := time.Parse("2006-01-02", "2019-01-03")
-	generator := NewDurationHttpRequestGenerator(Day, 1, lastSyncDate, getDurationHttpRequestParametersFunc(), true)
+	generator := &DurationHttpRequestGenerator{Duration: Day, Offset: 1, LastTime: lastSyncDate, IgnoreWeekend: true, ParametersFunc: getDurationHttpRequestParametersFunc()}
 	start, end := generator.NextDuration()
 	assert.Equal(t, start, exceptedStart)
 	assert.Equal(t, end, exceptedEnd)
@@ -49,7 +49,7 @@ func TestDurationHttpRequestGenerator_Gen_Daily_LastDayOfMonth(t *testing.T) {
 	lastSyncDate, _ := time.Parse("2006-01-02", "2019-01-31")
 	exceptedStart, _ := time.Parse("2006-01-02", "2019-02-01")
 	exceptedEnd, _ := time.Parse("2006-01-02", "2019-02-01")
-	generator := NewDurationHttpRequestGenerator(Day, 0, lastSyncDate, getDurationHttpRequestParametersFunc(), true)
+	generator := &DurationHttpRequestGenerator{Duration: Day, Offset: 0, LastTime: lastSyncDate, IgnoreWeekend: true, ParametersFunc: getDurationHttpRequestParametersFunc()}
 	start, end := generator.NextDuration()
 	assert.Equal(t, start, exceptedStart)
 	assert.Equal(t, end, exceptedEnd)
@@ -57,7 +57,7 @@ func TestDurationHttpRequestGenerator_Gen_Daily_LastDayOfMonth(t *testing.T) {
 
 func TestDurationHttpRequestGenerator_Gen_Daily_Future(t *testing.T) {
 	lastSyncDate, _ := time.Parse("2006-01-02", "2819-01-31")
-	generator := NewDurationHttpRequestGenerator(Day, 0, lastSyncDate, getDurationHttpRequestParametersFunc(), true)
+	generator := &DurationHttpRequestGenerator{Duration: Day, Offset: 0, LastTime: lastSyncDate, IgnoreWeekend: true, ParametersFunc: getDurationHttpRequestParametersFunc()}
 	start, end := generator.NextDuration()
 	assert.Equal(t, start.IsZero(), true)
 	assert.Equal(t, end.IsZero(), true)
@@ -67,7 +67,7 @@ func TestDurationHttpRequestGenerator_Gen_Monthly_FirstDayOfMonth(t *testing.T) 
 	lastSyncDate, _ := time.Parse("2006-01-02", "2019-07-01")
 	exceptedStart, _ := time.Parse("2006-01-02", "2019-07-01")
 	exceptedEnd, _ := time.Parse("2006-01-02", "2019-07-31")
-	generator := NewDurationHttpRequestGenerator(Month, 0, lastSyncDate, getDurationHttpRequestParametersFunc(), true)
+	generator := &DurationHttpRequestGenerator{Duration: Month, Offset: 0, LastTime: lastSyncDate, IgnoreWeekend: true, ParametersFunc: getDurationHttpRequestParametersFunc()}
 	start, end := generator.NextDuration()
 	assert.Equal(t, start, exceptedStart)
 	assert.Equal(t, end, exceptedEnd)
@@ -77,7 +77,7 @@ func TestDurationHttpRequestGenerator_Gen_Monthly_Offset_FirstDayOfMonth(t *test
 	lastSyncDate, _ := time.Parse("2006-01-02", "2019-07-01")
 	exceptedStart, _ := time.Parse("2006-01-02", "2019-06-01")
 	exceptedEnd, _ := time.Parse("2006-01-02", "2019-06-30")
-	generator := NewDurationHttpRequestGenerator(Month, -2, lastSyncDate, getDurationHttpRequestParametersFunc(), true)
+	generator := &DurationHttpRequestGenerator{Duration: Month, Offset: -2, LastTime: lastSyncDate, IgnoreWeekend: true, ParametersFunc: getDurationHttpRequestParametersFunc()}
 	start, end := generator.NextDuration()
 	assert.Equal(t, start, exceptedStart)
 	assert.Equal(t, end, exceptedEnd)
@@ -87,7 +87,7 @@ func TestDurationHttpRequestGenerator_Gen_Monthly_LastDayOfMonth(t *testing.T) {
 	lastSyncDate, _ := time.Parse("2006-01-02", "2019-06-30")
 	exceptedStart, _ := time.Parse("2006-01-02", "2019-07-01")
 	exceptedEnd, _ := time.Parse("2006-01-02", "2019-07-31")
-	generator := NewDurationHttpRequestGenerator(Month, 0, lastSyncDate, getDurationHttpRequestParametersFunc(), true)
+	generator := &DurationHttpRequestGenerator{Duration: Month, Offset: 0, LastTime: lastSyncDate, IgnoreWeekend: true, ParametersFunc: getDurationHttpRequestParametersFunc()}
 	start, end := generator.NextDuration()
 	assert.Equal(t, start, exceptedStart)
 	assert.Equal(t, end, exceptedEnd)
@@ -95,7 +95,7 @@ func TestDurationHttpRequestGenerator_Gen_Monthly_LastDayOfMonth(t *testing.T) {
 
 func TestDurationHttpRequestGenerator_Gen_Monthly_Future(t *testing.T) {
 	lastSyncDate, _ := time.Parse("2006-01-02", "2819-07-01")
-	generator := NewDurationHttpRequestGenerator(Month, 0, lastSyncDate, getDurationHttpRequestParametersFunc(), true)
+	generator := &DurationHttpRequestGenerator{Duration: Month, Offset: 0, LastTime: lastSyncDate, IgnoreWeekend: true, ParametersFunc: getDurationHttpRequestParametersFunc()}
 	start, end := generator.NextDuration()
 	assert.Equal(t, start.IsZero(), true)
 	assert.Equal(t, end.IsZero(), true)
@@ -105,7 +105,7 @@ func TestDurationHttpRequestGenerator_Gen_Yearly_FirstDayOfMonth(t *testing.T) {
 	lastSyncDate, _ := time.Parse("2006-01-02", "2019-07-01")
 	exceptedStart, _ := time.Parse("2006-01-02", "2019-01-01")
 	exceptedEnd, _ := time.Parse("2006-01-02", "2019-12-31")
-	generator := NewDurationHttpRequestGenerator(Year, 0, lastSyncDate, getDurationHttpRequestParametersFunc(), true)
+	generator := &DurationHttpRequestGenerator{Duration: Year, Offset: 0, LastTime: lastSyncDate, IgnoreWeekend: true, ParametersFunc: getDurationHttpRequestParametersFunc()}
 	start, end := generator.NextDuration()
 	assert.Equal(t, start, exceptedStart)
 	assert.Equal(t, end, exceptedEnd)
@@ -115,7 +115,7 @@ func TestDurationHttpRequestGenerator_Gen_Yearly_Offset_FirstDayOfYear(t *testin
 	lastSyncDate, _ := time.Parse("2006-01-02", "2019-01-01")
 	exceptedStart, _ := time.Parse("2006-01-02", "2018-01-01")
 	exceptedEnd, _ := time.Parse("2006-01-02", "2018-12-31")
-	generator := NewDurationHttpRequestGenerator(Year, -2, lastSyncDate, getDurationHttpRequestParametersFunc(), true)
+	generator := &DurationHttpRequestGenerator{Duration: Year, Offset: -2, LastTime: lastSyncDate, IgnoreWeekend: true, ParametersFunc: getDurationHttpRequestParametersFunc()}
 	start, end := generator.NextDuration()
 	assert.Equal(t, start, exceptedStart)
 	assert.Equal(t, end, exceptedEnd)
@@ -125,7 +125,7 @@ func TestDurationHttpRequestGenerator_Gen_Yearly_LastDayOfYear(t *testing.T) {
 	lastSyncDate, _ := time.Parse("2006-01-02", "2018-12-31")
 	exceptedStart, _ := time.Parse("2006-01-02", "2019-01-01")
 	exceptedEnd, _ := time.Parse("2006-01-02", "2019-12-31")
-	generator := NewDurationHttpRequestGenerator(Year, 0, lastSyncDate, getDurationHttpRequestParametersFunc(), true)
+	generator := &DurationHttpRequestGenerator{Duration: Year, Offset: 0, LastTime: lastSyncDate, IgnoreWeekend: true, ParametersFunc: getDurationHttpRequestParametersFunc()}
 	start, end := generator.NextDuration()
 	assert.Equal(t, start, exceptedStart)
 	assert.Equal(t, end, exceptedEnd)
@@ -133,7 +133,7 @@ func TestDurationHttpRequestGenerator_Gen_Yearly_LastDayOfYear(t *testing.T) {
 
 func TestDurationHttpRequestGenerator_Gen_Yearly_Future(t *testing.T) {
 	lastSyncDate, _ := time.Parse("2006-01-02", "2819-07-01")
-	generator := NewDurationHttpRequestGenerator(Year, 0, lastSyncDate, getDurationHttpRequestParametersFunc(), true)
+	generator := &DurationHttpRequestGenerator{Duration: Year, Offset: 0, LastTime: lastSyncDate, IgnoreWeekend: true, ParametersFunc: getDurationHttpRequestParametersFunc()}
 	start, end := generator.NextDuration()
 	assert.Equal(t, start.IsZero(), true)
 	assert.Equal(t, end.IsZero(), true)
