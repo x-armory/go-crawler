@@ -17,8 +17,8 @@ func TestCrawler_Start(t *testing.T) {
 		TimeIntervalAddRand: time.Duration(0),
 		RequestGenerator:    &TestCrawler_RequestGenerator{},
 		RequestReader:       &TestCrawler_RequestReader{},
-		DataUnmarshaler:     &TestCrawler_DataUnmarshaler{},
 		DataProcessor:       &TestCrawler_DataProcessor{},
+		DataUnmarshaler:     &TestCrawler_DataUnmarshaler{},
 	}
 	crawler.Start()
 }
@@ -50,8 +50,9 @@ func (r *TestCrawler_RequestReader) ReadRequest(req interface{}) io.Reader {
 	println(fmt.Sprintf("%v ReadRequest(%v)", time.Now(), req))
 	return strings.NewReader(req.(string))
 }
-func (m *TestCrawler_DataUnmarshaler) Unmarshal(r io.Reader, target interface{}) {
+func (m *TestCrawler_DataUnmarshaler) Unmarshal(r io.Reader, target interface{}) error {
 	println(fmt.Sprintf("%v Unmarshal(%T, %T)", time.Now(), r, target))
+	return nil
 }
 func (p *TestCrawler_DataProcessor) Process(target interface{}) {
 	println(fmt.Sprintf("%v Process(%T)", time.Now(), target))

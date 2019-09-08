@@ -2,6 +2,7 @@ package crawler
 
 import (
 	"github.com/x-armory/go-exception"
+	"github.com/x-armory/go-unmarshal/base"
 	"io"
 	"math/rand"
 	"sync"
@@ -21,9 +22,9 @@ type Crawler struct {
 	DataTarget          interface{}
 	TimeInterval        time.Duration
 	TimeIntervalAddRand time.Duration
+	DataUnmarshaler     base.Unmarshaler
 	RequestGenerator
 	RequestReader
-	DataUnmarshaler
 	DataProcessor
 }
 
@@ -35,13 +36,6 @@ type RequestGenerator interface {
 // 读取请求参数，生成Reader
 type RequestReader interface {
 	ReadRequest(req interface{}) (r io.Reader)
-}
-
-// 反序列化，读取Reader
-// 实现类可以选择是否写数据
-// 实现类可以选择接收每一个对象并处理
-type DataUnmarshaler interface {
-	Unmarshal(r io.Reader, target interface{})
 }
 
 // 可选，反序列化完成后，处理全部数据
@@ -92,7 +86,9 @@ crawlerLoop:
 				return
 			}
 			r := c.ReadRequest(req)
-			c.Unmarshal(r, c.DataTarget)
+			if e := c.DataUnmarshaler.Unmarshal(r, c.DataTarget); e != nil {
+				panic(e)
+			}
 			if c.DataProcessor != nil {
 				c.Process(c.DataTarget)
 			}
