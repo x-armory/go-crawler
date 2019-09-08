@@ -67,8 +67,9 @@ crawlerLoop:
 		// 异步执行业务代码
 		go func() {
 			bizFailed = false
+			var e interface{}
 			defer func() {
-				if e := recover(); e != nil {
+				if e = recover(); e != nil {
 					bizFailed = true
 					ex.Wrap(e).PrintErrorStack()
 				}
@@ -79,6 +80,7 @@ crawlerLoop:
 				}
 			}()
 			defer wait.Done()
+			defer c.Finally()
 
 			// 执行业务代码，中间有任何异常，都会被捕获，并设置退出标志
 			req := c.GenRequest()
