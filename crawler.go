@@ -80,7 +80,9 @@ crawlerLoop:
 				}
 			}()
 			defer wait.Done()
-			defer c.Finally()
+			if c.Finally != nil {
+				defer c.Finally()
+			}
 
 			// 执行业务代码，中间有任何异常，都会被捕获，并设置退出标志
 			req := c.GenRequest()
