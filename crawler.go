@@ -26,6 +26,7 @@ type Crawler struct {
 	RequestGenerator
 	RequestReader
 	DataProcessor
+	Finally func()
 }
 
 // 生成请求参数
