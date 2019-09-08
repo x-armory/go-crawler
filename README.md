@@ -8,63 +8,61 @@ get data easily to custom struct using annotations,
 package main
 
 import (
-	"bytes"
-	"fmt"
+	zip2 "archive/zip"
 	"github.com/x-armory/go-crawler"
-	"github.com/x-armory/go-exception"
-	"net/url"
+	"github.com/x-armory/go-crawler/request_generator"
+	"github.com/x-armory/go-crawler/request_reader"
+	"github.com/x-armory/go-unmarshal/base"
+	"github.com/x-armory/go-unmarshal/zip"
 	"time"
 )
 
+type ShangHaiQiHuo struct {
+	Name   string    `xm:"excel://sheet[0]/row[3:]/col[0] pattern='\\w+'"`
+	Date   time.Time `xm:"excel://sheet[0]/row[3:]/col[1] pattern='\\d{8}' format='20060102' timezone='Asia/Shanghai'"`
+	Open   int       `xm:"excel://sheet[0]/row[3:]/col[4] pattern='\\d+'"`
+	High   int       `xm:"excel://sheet[0]/row[3:]/col[5] pattern='\\d+'"`
+	Low    int       `xm:"excel://sheet[0]/row[3:]/col[6] pattern='\\d+'"`
+	Close  int       `xm:"excel://sheet[0]/row[3:]/col[7] pattern='\\d+'"`
+	Close2 int       `xm:"excel://sheet[0]/row[3:]/col[8] pattern='\\d+'"`
+	Vol    int       `xm:"excel://sheet[0]/row[3:]/col[11] pattern='\\d+'"`
+	Amount int       `xm:"excel://sheet[0]/row[3:]/col[12] pattern='\\d+'"`
+	Cang   int       `xm:"excel://sheet[0]/row[3:]/col[13] pattern='\\d+'"`
+}
+
 func main() {
-	NewBaiduCrawler().Start()
-}
+	c := &crawler.Crawler{
+		DataTarget:          []*ShangHaiQiHuo{},
+		TimeInterval:        time.Second,
+		TimeIntervalAddRand: time.Second * 2,
+		RequestReader:       request_reader.DefaultHttpRequestReader,
+		RequestGenerator: &request_generator.DurationHttpRequestGenerator{
+			Duration:      request_generator.Year,
+			IgnoreWeekend: true,
+			LastTime:      time.Now(),
+			ParametersFunc: func(start time.Time, end time.Time) (method string, urlStr string, headers map[string][]string, values map[string][]string) {
 
-// custom crawler business definition
-func NewBaiduCrawler() *crawler.Crawler {
-	lastSyncTime := time.Now().AddDate(0, 0, -3)
-	return &crawler.Crawler{
-		Business:         &BaiduBusiness{},
-		RequestGenerator: crawler.NewPeriodRequestGenerator(crawler.Day, 0, lastSyncTime, getRequestParametersFunc()),
-		DataUnmarshaler:  crawler.NewXpathUnmarshaler(0, 0, 1, -1),
+			},
+		},
+		DataUnmarshaler: &zip.Unmarshaler{
+			Charset: "gbk",
+			FileFilters: []zip.FileFilter{
+				func(fileIndex int, file *zip2.File) bool {
+
+				},
+			},
+			DataLoader: base.DataLoader{
+				ItemFilters: []base.ItemFilter{
+					func(item interface{}, vars *base.Vars) (flow base.FlowControl, deep int) {
+
+					},
+				},
+			},
+		},
+		Finally: func() {
+
+		},
 	}
-}
-
-type BaiduData struct {
-	Title string `xpath:"//*[@id='%d']/h3/a"`
-	Desc  string `xpath:"//*[@id='%d']/div[1]/text()"`
-}
-
-type BaiduBusiness struct {
-	data   []BaiduData
-	report bytes.Buffer
-	count  int
-}
-
-func (b *BaiduBusiness) NewPeriodData() interface{} {
-	b.data = []BaiduData{}
-	return &b.data
-}
-
-func (b *BaiduBusiness) ProcessPeriodData() {
-	for _, d := range b.data {
-		b.count++
-		fmt.Printf("%+v\n", d)
-	}
-}
-
-func (b *BaiduBusiness) SendReport() string {
-	println("total count", b.count)
-	return b.report.String()
-}
-
-func getRequestParametersFunc() crawler.PeriodRequestParametersFunc {
-	return func(start time.Time, end time.Time) (method string, urlStr string, headers map[string][]string, values map[string][]string) {
-		ex.Assert(!start.IsZero(), ex.Exception(crawler.NoMoreDataException, "", nil))
-		date := start.Format("2006-01-02")
-		println("sync date", date)
-		encode := url.Values(map[string][]string{"wd": {date}}).Encode()
-		return "GET", "https://www.baidu.com/s?" + encode, nil, nil
-	}
+	c.Start()
 }
 ```
