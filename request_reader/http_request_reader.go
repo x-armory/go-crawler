@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-var DefaultHttpRequestReader = &HttpRequestReader{util.DefaultHttpClient}
+var DefaultHttpRequestReader = &HttpRequestReader{Ignore404: true, Client: util.DefaultHttpClient}
 
 type HttpRequestReader struct {
 	Ignore404 bool
