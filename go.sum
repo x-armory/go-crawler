@@ -19,8 +19,8 @@ github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJy
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/x-armory/go-exception v1.2.1 h1:97pSpyH4S42l4Xou67p0h9FGMWjmkjOEdWp8r26pNrc=
 github.com/x-armory/go-exception v1.2.1/go.mod h1:r35JF2nuRCk+Alsug1qW2Q8VF1bFWBoV5kDc9JxthlI=
-github.com/x-armory/go-unmarshal v0.0.0-20190908160616-653fb7b4322a h1:x7VNnHJDUkbo3BbWJUjgIhx+wqYYjsrXdw5TBM/MgAI=
-github.com/x-armory/go-unmarshal v0.0.0-20190908160616-653fb7b4322a/go.mod h1:agnqJJbOsJwkl1As0Q4T9xP0kGGIHCy2zI8ma4GJAgU=
+github.com/x-armory/go-unmarshal v0.0.0-20190908162927-cf163a501756 h1:WaYXKWuAgsh47zdTiI9BK1u9AEl1kLwIhG3P+C63FfE=
+github.com/x-armory/go-unmarshal v0.0.0-20190908162927-cf163a501756/go.mod h1:agnqJJbOsJwkl1As0Q4T9xP0kGGIHCy2zI8ma4GJAgU=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7 h1:fHDIZ2oxGnUZRN6WgWFCbYBjH9uqVPRCUVUDhs0wnbA=
 golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
