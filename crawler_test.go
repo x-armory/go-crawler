@@ -2,6 +2,7 @@ package crawler
 
 import (
 	"fmt"
+	"github.com/x-armory/go-exception"
 	"io"
 	"math/rand"
 	"strings"
@@ -17,8 +18,14 @@ func TestCrawler_Start(t *testing.T) {
 		TimeIntervalAddRand: time.Duration(0),
 		RequestGenerator:    &TestCrawler_RequestGenerator{},
 		RequestReader:       &TestCrawler_RequestReader{},
-		DataProcessor:       &TestCrawler_DataProcessor{},
 		DataUnmarshaler:     &TestCrawler_DataUnmarshaler{},
+		Finally: func(data interface{}, err *ex.ExceptionClass) {
+			if err != nil {
+				err.PrintErrorStack()
+			} else {
+				println(fmt.Sprintf("%v", data))
+			}
+		},
 	}
 	crawler.Start()
 }
@@ -31,8 +38,6 @@ type TestCrawler_RequestReader struct {
 }
 type TestCrawler_DataUnmarshaler struct {
 }
-type TestCrawler_DataProcessor struct {
-}
 
 var i = 1
 
@@ -40,6 +45,7 @@ func (g *TestCrawler_RequestGenerator) GenRequest() interface{} {
 	req := fmt.Sprintf("req:%v", rand.Int63())
 	i++
 	if i == 5 {
+		println("quit when i =", i)
 		return nil
 		//panic(req)
 	}
@@ -53,8 +59,4 @@ func (r *TestCrawler_RequestReader) ReadRequest(req interface{}) io.Reader {
 func (m *TestCrawler_DataUnmarshaler) Unmarshal(r io.Reader, target interface{}) error {
 	println(fmt.Sprintf("%v Unmarshal(%T, %T)", time.Now(), r, target))
 	return nil
-}
-func (p *TestCrawler_DataProcessor) Process(target interface{}) {
-	println(fmt.Sprintf("%v Process(%T)", time.Now(), target))
-	println("==============")
 }

@@ -25,8 +25,7 @@ type Crawler struct {
 	DataUnmarshaler     base.Unmarshaler
 	RequestGenerator
 	RequestReader
-	DataProcessor
-	Finally func()
+	Finally func(data interface{}, ex *ex.ExceptionClass)
 }
 
 // 生成请求参数
@@ -66,36 +65,33 @@ crawlerLoop:
 
 		// 异步执行业务代码
 		go func() {
-			bizFailed = false
-			var e interface{}
-			defer func() {
-				if e = recover(); e != nil {
-					bizFailed = true
-					ex.Wrap(e).PrintErrorStack()
-				}
-				// 如果获取不到next request或者执行过程报错，退出循环
-				// 如果不需要退出循环，说明执行成功，等待间隔超时后进入下一次循环
-				if bizFailed {
-					bizFailedSig <- true
-				}
-			}()
 			defer wait.Done()
-			if c.Finally != nil {
-				defer c.Finally()
-			}
+			bizFailed = false
+			var execErr *ex.ExceptionClass
 
-			// 执行业务代码，中间有任何异常，都会被捕获，并设置退出标志
-			req := c.GenRequest()
-			if req == nil {
+			ex.Try(func() {
+				req := c.GenRequest()
+				if req == nil {
+					bizFailed = true
+					return
+				}
+				r := c.ReadRequest(req)
+				ex.AssertNoError(c.DataUnmarshaler.Unmarshal(r, c.DataTarget), "unmarshal failed")
+			}).Catch(func(err interface{}) {
+				execErr = ex.Wrap(err)
 				bizFailed = true
-				return
-			}
-			r := c.ReadRequest(req)
-			if e := c.DataUnmarshaler.Unmarshal(r, c.DataTarget); e != nil {
-				panic(e)
-			}
-			if c.DataProcessor != nil {
-				c.Process(c.DataTarget)
+			})
+
+			ex.Try(func() {
+				if c.Finally != nil {
+					c.Finally(c.DataTarget, execErr)
+				}
+			}).Catch(func(err interface{}) {
+				ex.Wrap(err).PrintErrorStack()
+			})
+
+			if bizFailed {
+				bizFailedSig <- true
 			}
 		}()
 
