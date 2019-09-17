@@ -19,6 +19,13 @@ func TestCrawler_Start(t *testing.T) {
 		RequestGenerator:    &TestCrawler_RequestGenerator{},
 		RequestReader:       &TestCrawler_RequestReader{},
 		DataUnmarshaler:     &TestCrawler_DataUnmarshaler{},
+		DurationFinally: func(data interface{}, err *ex.ExceptionClass) {
+			if err != nil {
+				err.PrintErrorStack()
+			} else {
+				println(fmt.Sprintf("%v", data))
+			}
+		},
 		Finally: func(data interface{}, err *ex.ExceptionClass) {
 			if err != nil {
 				err.PrintErrorStack()

@@ -25,7 +25,8 @@ type Crawler struct {
 	DataUnmarshaler     base.Unmarshaler
 	RequestGenerator
 	RequestReader
-	Finally func(data interface{}, ex *ex.ExceptionClass)
+	DurationFinally func(data interface{}, ex *ex.ExceptionClass)
+	Finally         func(data interface{}, ex *ex.ExceptionClass)
 }
 
 // 生成请求参数
@@ -50,6 +51,7 @@ func (c Crawler) Start() {
 	ex.Assert(c.RequestReader != nil, "RequestReader cannot be nil")
 	ex.Assert(c.DataUnmarshaler != nil, "DataUnmarshaler cannot be nil")
 
+	var execErr *ex.ExceptionClass
 	rand.Seed(time.Now().UnixNano())
 crawlerLoop:
 	for true {
@@ -67,7 +69,6 @@ crawlerLoop:
 		go func() {
 			defer wait.Done()
 			bizFailed = false
-			var execErr *ex.ExceptionClass
 
 			ex.Try(func() {
 				req := c.GenRequest()
@@ -83,8 +84,8 @@ crawlerLoop:
 			})
 
 			ex.Try(func() {
-				if c.Finally != nil {
-					c.Finally(c.DataTarget, execErr)
+				if c.DurationFinally != nil {
+					c.DurationFinally(c.DataTarget, execErr)
 				}
 			}).Catch(func(err interface{}) {
 				ex.Wrap(err).PrintErrorStack()
@@ -120,4 +121,12 @@ crawlerLoop:
 			time.Sleep(time.Duration(rand.Int63n(int64(c.TimeIntervalAddRand))))
 		}
 	}
+
+	ex.Try(func() {
+		if c.Finally != nil {
+			c.Finally(c.DataTarget, execErr)
+		}
+	}).Catch(func(err interface{}) {
+		ex.Wrap(err).PrintErrorStack()
+	})
 }
