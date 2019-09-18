@@ -78,7 +78,7 @@ crawlerLoop:
 			ex.Try(func() {
 				req := c.GenRequest()
 				if req == nil {
-					processErr = ex.Wrap("GenRequest() returns nil")
+					processErr = ex.Wrap("no more data")
 					bizFailed = true
 					return
 				}
