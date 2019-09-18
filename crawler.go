@@ -88,7 +88,8 @@ crawlerLoop:
 					c.DurationFinally(c.DataTarget, execErr)
 				}
 			}).Catch(func(err interface{}) {
-				ex.Wrap(err).PrintErrorStack()
+				execErr = ex.Wrap(err)
+				bizFailed = true
 			})
 
 			if bizFailed {
