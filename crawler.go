@@ -79,6 +79,7 @@ crawlerLoop:
 				req := c.GenRequest()
 				if req == nil {
 					processErr = ex.Wrap("GenRequest() returns nil")
+					bizFailed = true
 					return
 				}
 				r := c.ReadRequest(req)
