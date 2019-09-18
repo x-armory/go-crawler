@@ -34,7 +34,12 @@ const (
 )
 
 func (g *DurationHttpRequestGenerator) GenRequest() interface{} {
-	return g.genRequest(g.ParametersFunc(g.NextDuration()))
+	start, end := g.NextDuration()
+	if start.IsZero() {
+		println("[INFO] no more data")
+		return nil
+	}
+	return g.genRequest(g.ParametersFunc(start, end))
 }
 
 // 计算下一个周期的开始、结束时间
@@ -55,12 +60,13 @@ func (g *DurationHttpRequestGenerator) NextDuration() (start time.Time, end time
 		}
 		g.ready = true
 	}
-	ex.Assert(g.ParametersFunc != nil, "no ParametersFunc")
-
+	if g.ParametersFunc == nil {
+		return time.Time{}, time.Time{}
+	}
 	now := time.Now()
-	ex.Assert(!g.LastTime.IsZero(), "last sync time is zero")
-	ex.Assert(!g.LastTime.After(now), "no more data")
-
+	if g.LastTime.IsZero() || g.LastTime.After(now) {
+		return time.Time{}, time.Time{}
+	}
 	var end2 time.Time
 	switch g.Duration {
 	case Year:
@@ -78,9 +84,11 @@ func (g *DurationHttpRequestGenerator) NextDuration() (start time.Time, end time
 			}
 		}
 	}
-	ex.Assert(!g.LastTime.After(now), "no more data")
-
-	return g.LastTime, end2
+	if g.LastTime.After(now) {
+		return time.Time{}, time.Time{}
+	} else {
+		return g.LastTime, end2
+	}
 }
 
 // 根据http request所需参数组装http request，并设置默认header，避免被反爬
