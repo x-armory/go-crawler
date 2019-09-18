@@ -59,7 +59,7 @@ crawlerLoop:
 		// 然后随机再等待c.TimeIntervalAddRand
 		// 确保请求不会很频繁、规律
 		var bizFailedSig = make(chan bool)
-		var bizFailed bool
+		var bizFailed = false
 
 		// 同步锁，用于等待业务执行结束
 		wait := sync.WaitGroup{}
@@ -67,8 +67,12 @@ crawlerLoop:
 
 		// 异步执行业务代码
 		go func() {
-			defer wait.Done()
-			bizFailed = false
+			defer func() {
+				wait.Done()
+				if bizFailed {
+					bizFailedSig <- bizFailed
+				}
+			}()
 
 			ex.Try(func() {
 				req := c.GenRequest()
@@ -92,9 +96,6 @@ crawlerLoop:
 				bizFailed = true
 			})
 
-			if bizFailed {
-				bizFailedSig <- true
-			}
 		}()
 
 		// 等待执行异常信号，或者间隔超时
