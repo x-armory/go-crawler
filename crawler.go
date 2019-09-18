@@ -74,28 +74,33 @@ crawlerLoop:
 				}
 			}()
 
+			var processErr *ex.ExceptionClass
 			ex.Try(func() {
 				req := c.GenRequest()
 				if req == nil {
-					bizFailed = true
+					processErr = ex.Wrap("GenRequest() returns nil")
 					return
 				}
 				r := c.ReadRequest(req)
 				ex.AssertNoError(c.DataUnmarshaler.Unmarshal(r, c.DataTarget), "unmarshal failed")
 			}).Catch(func(err interface{}) {
-				execErr = ex.Wrap(err)
-				bizFailed = true
+				processErr = ex.Wrap(err)
 			})
 
 			ex.Try(func() {
-				if c.DurationFinally != nil {
-					c.DurationFinally(c.DataTarget, execErr)
+				if c.DurationFinally != nil { // 如果定义了DurationFinally，将执行异常交给DurationFinally处理
+					c.DurationFinally(c.DataTarget, processErr)
+				} else {
+					if processErr != nil { // 如果没定义DurationFinally，且出现了执行异常，直接抛出
+						processErr.Throw()
+					}
 				}
 			}).Catch(func(err interface{}) {
 				execErr = ex.Wrap(err)
 				bizFailed = true
 			})
 
+			// 如果执行出现了异常，且需要忽略，需要定义DurationFinally，并吃掉执行异常
 		}()
 
 		// 等待执行异常信号，或者间隔超时
