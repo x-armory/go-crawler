@@ -90,7 +90,11 @@ crawlerLoop:
 
 			ex.Try(func() {
 				if c.DurationFinally != nil { // 如果定义了DurationFinally，将执行异常交给DurationFinally处理
-					c.DurationFinally(c.DataTarget, processErr)
+					if processErr != nil {
+						c.DurationFinally(nil, processErr)
+					} else {
+						c.DurationFinally(c.DataTarget, nil)
+					}
 				} else {
 					if processErr != nil { // 如果没定义DurationFinally，且出现了执行异常，直接抛出
 						processErr.Throw()
@@ -119,10 +123,10 @@ crawlerLoop:
 		// 如果执行成功，不会发出退出信号，如果尝试读取会无限等待
 		// 因此下一步使用异常状态来判断
 		wait.Wait()
-		close(bizFailedSig)
 		if bizFailed {
 			break crawlerLoop
 		}
+		close(bizFailedSig)
 
 		// 如果设置了随机额外间隔时间，继续等待
 		if c.TimeIntervalAddRand > 0 {
