@@ -55,13 +55,12 @@ func (g *DurationHttpRequestGenerator) NextDuration() (start time.Time, end time
 		}
 		g.ready = true
 	}
-	if g.ParametersFunc == nil {
-		return time.Time{}, time.Time{}
-	}
+	ex.Assert(g.ParametersFunc != nil, "no ParametersFunc")
+
 	now := time.Now()
-	if g.LastTime.IsZero() || g.LastTime.After(now) {
-		return time.Time{}, time.Time{}
-	}
+	ex.Assert(!g.LastTime.IsZero(), "last sync time is zero")
+	ex.Assert(!g.LastTime.After(now), "no more data")
+
 	var end2 time.Time
 	switch g.Duration {
 	case Year:
@@ -79,11 +78,9 @@ func (g *DurationHttpRequestGenerator) NextDuration() (start time.Time, end time
 			}
 		}
 	}
-	if g.LastTime.After(now) {
-		return time.Time{}, time.Time{}
-	} else {
-		return g.LastTime, end2
-	}
+	ex.Assert(!g.LastTime.After(now), "no more data")
+
+	return g.LastTime, end2
 }
 
 // 根据http request所需参数组装http request，并设置默认header，避免被反爬
