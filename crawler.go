@@ -19,14 +19,14 @@ import (
 // DataUnmarshaler：执行反序列化，由Crawler的实现类选择具体的反序列化方法，以及处理过程，可以关闭写缓存，并选用ItemFilter来挨个处理元素；
 // DataProcessor：可选项，处理最终结果，也可以用于清理中间过程数据；
 type Crawler struct {
-	DataTarget          interface{}
 	TimeInterval        time.Duration
 	TimeIntervalAddRand time.Duration
 	DataUnmarshaler     base.Unmarshaler
 	RequestGenerator
 	RequestReader
-	DurationFinally func(data interface{}, ex *ex.ExceptionClass)
-	Finally         func(data interface{}, ex *ex.ExceptionClass)
+	DataTargetGetter func() interface{}
+	DurationFinally  func(data interface{}, ex *ex.ExceptionClass)
+	Finally          func(data interface{}, ex *ex.ExceptionClass)
 }
 
 // 生成请求参数
@@ -46,7 +46,7 @@ type DataProcessor interface {
 }
 
 func (c Crawler) Start() {
-	ex.Assert(c.DataTarget != nil, "DataTarget cannot be nil")
+	ex.Assert(c.DataTargetGetter != nil, "DataTargetGetter cannot be nil")
 	ex.Assert(c.RequestGenerator != nil, "RequestGenerator cannot be nil")
 	ex.Assert(c.RequestReader != nil, "RequestReader cannot be nil")
 	ex.Assert(c.DataUnmarshaler != nil, "DataUnmarshaler cannot be nil")
@@ -83,7 +83,7 @@ crawlerLoop:
 					return
 				}
 				r := c.ReadRequest(req)
-				ex.AssertNoError(c.DataUnmarshaler.Unmarshal(r, c.DataTarget), "unmarshal failed")
+				ex.AssertNoError(c.DataUnmarshaler.Unmarshal(r, c.DataTargetGetter()), "unmarshal failed")
 			}).Catch(func(err interface{}) {
 				processErr = ex.Wrap(err)
 			})
@@ -93,7 +93,7 @@ crawlerLoop:
 					if processErr != nil {
 						c.DurationFinally(nil, processErr)
 					} else {
-						c.DurationFinally(c.DataTarget, nil)
+						c.DurationFinally(c.DataTargetGetter(), nil)
 					}
 				} else {
 					if processErr != nil { // 如果没定义DurationFinally，且出现了执行异常，直接抛出
@@ -136,7 +136,7 @@ crawlerLoop:
 
 	ex.Try(func() {
 		if c.Finally != nil {
-			c.Finally(c.DataTarget, execErr)
+			c.Finally(c.DataTargetGetter(), execErr)
 		}
 	}).Catch(func(err interface{}) {
 		ex.Wrap(err).PrintErrorStack()

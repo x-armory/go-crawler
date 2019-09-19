@@ -13,7 +13,9 @@ import (
 func TestCrawler_Start(t *testing.T) {
 	var data []Dto
 	crawler := Crawler{
-		DataTarget:          data,
+		DataTargetGetter: func() interface{} {
+			return data
+		},
 		TimeInterval:        time.Second * 2,
 		TimeIntervalAddRand: time.Duration(0),
 		RequestGenerator:    &TestCrawler_RequestGenerator{},
