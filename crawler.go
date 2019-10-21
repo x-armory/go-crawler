@@ -11,22 +11,25 @@ import (
 
 // 同步执行RequestGenerator、RequestReader、DataUnmarshaler、DataProcessor方法
 // 根据设定的间隔时间等待下次执行
-// DataTarget：缓存最终数据结果，可以是 *struct / []struct / []*struct；
+// DataTarget：目标数据地址数组，元素可以是 *struct / []struct / []*struct；
+// Ex：最后一个异常
 // TimeInterval：控制RequestReader执行间隔，避免太快；
 // TimeIntervalAddRand：随机延长TimeInterval，避免请求间隔太规律；
+// DataUnmarshaler：执行反序列化，由Crawler的实现类选择具体的反序列化方法，以及处理过程，可以关闭写缓存，并选用ItemFilter来挨个处理元素；
 // RequestGenerator：生成请求；
 // RequestReader：读取请求返回内容；
-// DataUnmarshaler：执行反序列化，由Crawler的实现类选择具体的反序列化方法，以及处理过程，可以关闭写缓存，并选用ItemFilter来挨个处理元素；
-// DataProcessor：可选项，处理最终结果，也可以用于清理中间过程数据；
+// DurationFinally：可选项，每个间隔最终执行；
+// Finally：可选项，最终执行；
 type Crawler struct {
+	DataTarget          []interface{}
+	Ex                  *ex.ExceptionClass
 	TimeInterval        time.Duration
 	TimeIntervalAddRand time.Duration
 	DataUnmarshaler     base.Unmarshaler
 	RequestGenerator
 	RequestReader
-	DataTargetGetter func() interface{}
-	DurationFinally  func(data interface{}, ex *ex.ExceptionClass)
-	Finally          func(data interface{}, ex *ex.ExceptionClass)
+	DurationFinally func(crawler *Crawler)
+	Finally         func(crawler *Crawler)
 }
 
 // 生成请求参数
@@ -45,16 +48,15 @@ type DataProcessor interface {
 	Process(target interface{})
 }
 
-func (c Crawler) Start() {
-	ex.Assert(c.DataTargetGetter != nil, "DataTargetGetter cannot be nil")
+func (c *Crawler) Start() {
 	ex.Assert(c.RequestGenerator != nil, "RequestGenerator cannot be nil")
 	ex.Assert(c.RequestReader != nil, "RequestReader cannot be nil")
 	ex.Assert(c.DataUnmarshaler != nil, "DataUnmarshaler cannot be nil")
 
-	var execErr *ex.ExceptionClass
 	rand.Seed(time.Now().UnixNano())
 crawlerLoop:
 	for true {
+		ex.Assert(len(c.DataTarget) > 0, "DataTarget cannot be empty")
 		// 用于控制请求间隔，最少间隔c.TimeInterval，如果请求处理时间超过c.TimeInterval，则处理时间为请求间隔
 		// 然后随机再等待c.TimeIntervalAddRand
 		// 确保请求不会很频繁、规律
@@ -83,7 +85,9 @@ crawlerLoop:
 					return
 				}
 				r := c.ReadRequest(req)
-				ex.AssertNoError(c.DataUnmarshaler.Unmarshal(r, c.DataTargetGetter()), "unmarshal failed")
+				for e := range c.DataTarget {
+					ex.AssertNoError(c.DataUnmarshaler.Unmarshal(r, c.DataTarget[e]), "unmarshal failed")
+				}
 			}).Catch(func(err interface{}) {
 				processErr = ex.Wrap(err)
 			})
@@ -91,9 +95,9 @@ crawlerLoop:
 			ex.Try(func() {
 				if c.DurationFinally != nil { // 如果定义了DurationFinally，将执行异常交给DurationFinally处理
 					if processErr != nil {
-						c.DurationFinally(nil, processErr)
+						c.DurationFinally(c)
 					} else {
-						c.DurationFinally(c.DataTargetGetter(), nil)
+						c.DurationFinally(c)
 					}
 				} else {
 					if processErr != nil { // 如果没定义DurationFinally，且出现了执行异常，直接抛出
@@ -101,7 +105,7 @@ crawlerLoop:
 					}
 				}
 			}).Catch(func(err interface{}) {
-				execErr = ex.Wrap(err)
+				c.Ex = ex.Wrap(err)
 				bizFailed = true
 			})
 
@@ -136,7 +140,7 @@ crawlerLoop:
 
 	ex.Try(func() {
 		if c.Finally != nil {
-			c.Finally(c.DataTargetGetter(), execErr)
+			c.Finally(c)
 		}
 	}).Catch(func(err interface{}) {
 		ex.Wrap(err).PrintErrorStack()

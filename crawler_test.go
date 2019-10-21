@@ -2,7 +2,6 @@ package crawler
 
 import (
 	"fmt"
-	"github.com/x-armory/go-exception"
 	"io"
 	"math/rand"
 	"strings"
@@ -11,28 +10,28 @@ import (
 )
 
 func TestCrawler_Start(t *testing.T) {
-	var data []Dto
+	var data = make([]interface{}, 1)
+	data[0] = &[]Dto{}
+
 	crawler := Crawler{
-		DataTargetGetter: func() interface{} {
-			return data
-		},
+		DataTarget:          data,
 		TimeInterval:        time.Second * 2,
 		TimeIntervalAddRand: time.Duration(0),
 		RequestGenerator:    &TestCrawler_RequestGenerator{},
 		RequestReader:       &TestCrawler_RequestReader{},
 		DataUnmarshaler:     &TestCrawler_DataUnmarshaler{},
-		DurationFinally: func(data interface{}, err *ex.ExceptionClass) {
-			if err != nil {
-				err.PrintErrorStack()
+		DurationFinally: func(c *Crawler) {
+			if c.Ex != nil {
+				c.Ex.PrintErrorStack()
 			} else {
-				println(fmt.Sprintf("%v", data))
+				println(fmt.Sprintf("%v", data[0]))
 			}
 		},
-		Finally: func(data interface{}, err *ex.ExceptionClass) {
-			if err != nil {
-				err.PrintErrorStack()
+		Finally: func(c *Crawler) {
+			if c.Ex != nil {
+				c.Ex.PrintErrorStack()
 			} else {
-				println(fmt.Sprintf("%v", data))
+				println(fmt.Sprintf("%v", data[0]))
 			}
 		},
 	}
