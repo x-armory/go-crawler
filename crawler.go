@@ -76,11 +76,10 @@ crawlerLoop:
 				}
 			}()
 
-			var processErr *ex.ExceptionClass
 			ex.Try(func() {
 				req := c.GenRequest()
 				if req == nil {
-					processErr = ex.Wrap("no more data")
+					c.Ex = ex.Wrap("no more data")
 					bizFailed = true
 					return
 				}
@@ -89,19 +88,15 @@ crawlerLoop:
 					ex.AssertNoError(c.DataUnmarshaler.Unmarshal(r, c.DataTarget[e]), "unmarshal failed")
 				}
 			}).Catch(func(err interface{}) {
-				processErr = ex.Wrap(err)
+				c.Ex = ex.Wrap(err)
 			})
 
 			ex.Try(func() {
 				if c.DurationFinally != nil { // 如果定义了DurationFinally，将执行异常交给DurationFinally处理
-					if processErr != nil {
-						c.DurationFinally(c)
-					} else {
-						c.DurationFinally(c)
-					}
+					c.DurationFinally(c)
 				} else {
-					if processErr != nil { // 如果没定义DurationFinally，且出现了执行异常，直接抛出
-						processErr.Throw()
+					if c.Ex != nil { // 如果没定义DurationFinally，且出现了执行异常，直接抛出
+						c.Ex.Throw()
 					}
 				}
 			}).Catch(func(err interface{}) {
