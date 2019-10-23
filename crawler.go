@@ -1,9 +1,11 @@
 package crawler
 
 import (
+	"bytes"
 	"github.com/x-armory/go-exception"
 	"github.com/x-armory/go-unmarshal/base"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"sync"
 	"time"
@@ -83,9 +85,18 @@ crawlerLoop:
 					bizFailed = true
 					return
 				}
+				// 如果目标对象超过1个，缓存io内容，用于以后读取
 				r := c.ReadRequest(req)
+				var buf []byte
+				if len(c.DataTarget) > 1 {
+					buf, _ = ioutil.ReadAll(r)
+				}
 				for e := range c.DataTarget {
-					ex.AssertNoError(c.DataUnmarshaler.Unmarshal(r, c.DataTarget[e]), "unmarshal failed")
+					var r2 = r
+					if e > 0 {
+						r2 = bytes.NewReader(buf)
+					}
+					ex.AssertNoError(c.DataUnmarshaler.Unmarshal(r2, c.DataTarget[e]), "unmarshal failed")
 				}
 			}).Catch(func(err interface{}) {
 				c.Ex = ex.Wrap(err)
