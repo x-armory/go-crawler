@@ -11,7 +11,11 @@ import (
 	"strings"
 )
 
-var DefaultHttpRequestReader = &HttpRequestReader{Ignore404: true, Client: util.DefaultHttpClient}
+var DefaultHttpRequestReader = &HttpRequestReader{
+	Ignore404:  true,
+	Client:     util.DefaultHttpClient,
+	LogRequest: true,
+}
 
 type HttpRequestReader struct {
 	Ignore404   bool
@@ -37,10 +41,10 @@ func (r *HttpRequestReader) ReadRequest(req interface{}) io.Reader {
 				println(e.Error())
 			}
 		}
-		println("Method", request.Method)
-		println("Url", request.URL.String())
-		println("Header", string(headerBytes))
-		println("Body", string(bodyBytes))
+		println("[Method]", request.Method)
+		println("[Url]", request.URL.String())
+		println("[Headers]", string(headerBytes))
+		println("[Body]", string(bodyBytes))
 	}
 	response, e := r.Client.Do(request)
 	ex.AssertNoError(e, "http do request failed")
@@ -59,7 +63,7 @@ func (r *HttpRequestReader) ReadRequest(req interface{}) io.Reader {
 	responseBytes, e := ioutil.ReadAll(response.Body)
 	ex.AssertNoError(e, "read response error")
 	if r.LogResponse {
-		println("Response: %s", string(responseBytes))
+		println("[Response] %s", string(responseBytes))
 	}
 
 	return bytes.NewReader(responseBytes)
