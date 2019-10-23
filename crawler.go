@@ -93,7 +93,7 @@ crawlerLoop:
 				}
 				for e := range c.DataTarget {
 					var r2 = r
-					if e > 0 {
+					if len(c.DataTarget) > 0 {
 						r2 = bytes.NewReader(buf)
 					}
 					ex.AssertNoError(c.DataUnmarshaler.Unmarshal(r2, c.DataTarget[e]), "unmarshal failed")
