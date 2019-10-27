@@ -30,21 +30,26 @@ func (r *HttpRequestReader) ReadRequest(req interface{}) io.Reader {
 		ex.Wrap("not supported parameter type").Throw()
 	}
 	if r.LogRequest {
-		var bodyBytes []byte
-		headerBytes, _ := json.Marshal(request.Header)
-		body, e := request.GetBody()
-		if e != nil {
-			println(e.Error())
-		} else {
-			bodyBytes, e = ioutil.ReadAll(body)
-			if e != nil {
-				println(e.Error())
-			}
-		}
+		// method, url
 		println("[Method]", request.Method)
 		println("[Url]", request.URL.String())
+		// headers
+		var bodyBytes []byte
+		headerBytes, _ := json.Marshal(request.Header)
 		println("[Headers]", string(headerBytes))
-		println("[Body]", string(bodyBytes))
+		// body
+		if request.GetBody != nil {
+			body, e := request.GetBody()
+			if e != nil {
+				println(e.Error())
+			} else {
+				bodyBytes, e = ioutil.ReadAll(body)
+				if e != nil {
+					println(e.Error())
+				}
+			}
+			println("[Body]", string(bodyBytes))
+		}
 	}
 	response, e := r.Client.Do(request)
 	ex.AssertNoError(e, "http do request failed")
