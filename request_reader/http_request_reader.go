@@ -58,12 +58,12 @@ func (r *HttpRequestReader) ReadRequest(req interface{}) io.Reader {
 	ex.Assert(response.StatusCode < 500, "server error")
 	if response.StatusCode == 404 {
 		if !r.Ignore404 {
-			panic("404")
+			panic(404)
 		} else {
 			return strings.NewReader("")
 		}
 	} else {
-		ex.Assert(response.StatusCode < 400, response.Status)
+		ex.Assert(response.StatusCode < 400, response.StatusCode)
 	}
 	responseBytes, e := ioutil.ReadAll(response.Body)
 	ex.AssertNoError(e, "read response error")

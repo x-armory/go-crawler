@@ -78,6 +78,7 @@ crawlerLoop:
 				}
 			}()
 
+			var r io.Reader
 			ex.Try(func() {
 				req := c.GenRequest()
 				if req == nil {
@@ -85,8 +86,16 @@ crawlerLoop:
 					bizFailed = true
 					return
 				}
+				r = c.ReadRequest(req)
+			}).Catch(func(err interface{}) {
+				c.Ex = ex.Wrap(err)
+				bizFailed = true
+			})
+			if bizFailed {
+				return
+			}
+			ex.Try(func() {
 				// 如果目标对象超过1个，缓存io内容，用于以后读取
-				r := c.ReadRequest(req)
 				var buf []byte
 				if len(c.DataTarget) > 1 {
 					buf, _ = ioutil.ReadAll(r)
