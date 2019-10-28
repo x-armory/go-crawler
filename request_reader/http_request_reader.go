@@ -9,12 +9,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 )
 
 var DefaultHttpRequestReader = &HttpRequestReader{
 	Ignore404:  true,
 	Client:     util.DefaultHttpClient,
 	LogRequest: true,
+	RetryTimes: 5,
 }
 
 type HttpRequestReader struct {
@@ -22,6 +24,7 @@ type HttpRequestReader struct {
 	Client      *http.Client
 	LogRequest  bool
 	LogResponse bool
+	RetryTimes  int
 }
 
 func (r *HttpRequestReader) ReadRequest(req interface{}) io.Reader {
@@ -51,7 +54,24 @@ func (r *HttpRequestReader) ReadRequest(req interface{}) io.Reader {
 			println("[Body]", string(bodyBytes))
 		}
 	}
-	response, e := r.Client.Do(request)
+
+	var response *http.Response
+	var e error
+	retryTimes := 0
+	for true {
+		response, e = r.Client.Do(request)
+		if e == nil || strings.Index(e.Error(), "stopped after 10 redirects") < 0 {
+			break
+		}
+		retryTimes++
+		if retryTimes > r.RetryTimes {
+			println("[WARN] stopped after 10 redirects, retried", retryTimes, "times, exit")
+			break
+		}
+		println("[WARN] stopped after 10 redirects, retry", retryTimes, "times")
+		time.Sleep(time.Second * time.Duration(retryTimes*retryTimes*retryTimes))
+	}
+
 	ex.AssertNoError(e, "http do request failed")
 	ex.Assert(response.Body != nil, "response body is nil")
 	defer response.Body.Close()
