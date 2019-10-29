@@ -32,9 +32,10 @@ func init() {
 		Transport: transport,
 		Timeout:   time.Minute * 10,
 	}
+	jar, _ := cookiejar.New()
 	DefaultHttpClientWithCookieJar = &http.Client{
 		Transport: transport,
 		Timeout:   time.Minute * 10,
-		Jar:       &cookiejar.Jar{},
+		Jar:       jar,
 	}
 }
