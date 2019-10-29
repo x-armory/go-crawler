@@ -32,6 +32,15 @@ func (r *HttpRequestReader) ReadRequest(req interface{}) io.Reader {
 	if !ok {
 		ex.Wrap("not supported parameter type").Throw()
 	}
+	var bodyBytes []byte
+	if request.GetBody != nil {
+		originBodyReader, e := request.GetBody()
+		if e != nil {
+			println("[WARN]", e.Error())
+		} else {
+			bodyBytes, _ = ioutil.ReadAll(originBodyReader)
+		}
+	}
 	if r.LogRequest {
 		// method, url
 		println("[Method]", request.Method)
@@ -41,27 +50,16 @@ func (r *HttpRequestReader) ReadRequest(req interface{}) io.Reader {
 		headerBytes, _ := json.Marshal(request.Header)
 		println("[Headers]", string(headerBytes))
 		// body
-		if request.GetBody != nil {
-			body, e := request.GetBody()
-			if e != nil {
-				println(e.Error())
-			} else {
-				bodyBytes, e = ioutil.ReadAll(body)
-				if e != nil {
-					println(e.Error())
-				}
-			}
-			println("[Body]", string(bodyBytes))
-		}
+		println("[Body]", string(bodyBytes))
 	}
 
 	var response *http.Response
 	var e error
 	retryTimes := 0
 	for true {
-		var reqCopy = *request
-		reqCopy.Response = nil
-		response, e = r.Client.Do(&reqCopy)
+		newRequest, _ := http.NewRequest(request.Method, request.URL.String(), bytes.NewReader(bodyBytes))
+		newRequest.Header = request.Header
+		response, e = r.Client.Do(newRequest)
 		if e == nil {
 			break
 		}
