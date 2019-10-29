@@ -68,7 +68,7 @@ func (r *HttpRequestReader) ReadRequest(req interface{}) io.Reader {
 			println("[WARN]", e.Error(), retryTimes, "times, exit")
 			break
 		}
-		println("[WARN]", e.Error(), retryTimes, "times, exit")
+		println("[WARN]", e.Error(), retryTimes, "times, retry")
 		time.Sleep(time.Second * time.Duration(retryTimes*retryTimes*retryTimes))
 	}
 
