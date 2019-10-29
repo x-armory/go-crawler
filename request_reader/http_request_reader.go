@@ -18,6 +18,12 @@ var DefaultHttpRequestReader = &HttpRequestReader{
 	LogRequest: true,
 	RetryTimes: 5,
 }
+var DefaultHttpRequestReaderWithCoolieJar = &HttpRequestReader{
+	Ignore404:  true,
+	Client:     util.DefaultHttpClientWithCookieJar,
+	LogRequest: true,
+	RetryTimes: 5,
+}
 
 type HttpRequestReader struct {
 	Ignore404   bool

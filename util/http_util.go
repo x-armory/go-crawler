@@ -3,6 +3,7 @@ package util
 import (
 	"crypto/tls"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"strings"
@@ -10,6 +11,7 @@ import (
 )
 
 var DefaultHttpClient *http.Client
+var DefaultHttpClientWithCookieJar *http.Client
 
 func init() {
 	transport := &http.Transport{
@@ -29,13 +31,10 @@ func init() {
 	DefaultHttpClient = &http.Client{
 		Transport: transport,
 		Timeout:   time.Minute * 10,
-		//CheckRedirect: func(req *http.Request, via []*http.Request) error {
-		//	println("[WARN] receive redirect response")
-		//	if req.Response != nil && req.Response.Header != nil {
-		//		location := req.Response.Header.Get("Location")
-		//		println("[WARN] url", location)
-		//	}
-		//	return http.ErrUseLastResponse
-		//},
+	}
+	DefaultHttpClientWithCookieJar = &http.Client{
+		Transport: transport,
+		Timeout:   time.Minute * 10,
+		Jar:       &cookiejar.Jar{},
 	}
 }
