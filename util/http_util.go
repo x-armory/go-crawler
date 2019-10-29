@@ -29,13 +29,13 @@ func init() {
 	DefaultHttpClient = &http.Client{
 		Transport: transport,
 		Timeout:   time.Minute * 10,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			println("[WARN] receive redirect response")
-			if req.Response != nil && req.Response.Header != nil {
-				location := req.Response.Header.Get("Location")
-				println("[WARN] url", location)
-			}
-			return http.ErrUseLastResponse
-		},
+		//CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		//	println("[WARN] receive redirect response")
+		//	if req.Response != nil && req.Response.Header != nil {
+		//		location := req.Response.Header.Get("Location")
+		//		println("[WARN] url", location)
+		//	}
+		//	return http.ErrUseLastResponse
+		//},
 	}
 }
