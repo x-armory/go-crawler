@@ -59,7 +59,9 @@ func (r *HttpRequestReader) ReadRequest(req interface{}) io.Reader {
 	var e error
 	retryTimes := 0
 	for true {
-		response, e = r.Client.Do(request)
+		var reqCopy = *request
+		reqCopy.Response = nil
+		response, e = r.Client.Do(&reqCopy)
 		if e == nil {
 			break
 		}
