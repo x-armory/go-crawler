@@ -125,5 +125,11 @@ func (g *DurationHttpRequestGenerator) genRequest(method string, urlStr string, 
 	if request.Header.Get("Content-Type") == "" {
 		request.Header.Set("Content-Type", "application/json")
 	}
+	if request.Header.Get("Cache-control") == "" {
+		request.Header.Set("Cache-control", "no-cache")
+	}
+	if request.Header.Get("pragma") == "" {
+		request.Header.Set("pragma", "no-cache")
+	}
 	return request
 }
