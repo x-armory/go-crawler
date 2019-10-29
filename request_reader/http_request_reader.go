@@ -60,15 +60,15 @@ func (r *HttpRequestReader) ReadRequest(req interface{}) io.Reader {
 	retryTimes := 0
 	for true {
 		response, e = r.Client.Do(request)
-		if e == nil || strings.Index(e.Error(), "stopped after 10 redirects") < 0 {
+		if e == nil {
 			break
 		}
 		retryTimes++
 		if retryTimes > r.RetryTimes {
-			println("[WARN] stopped after 10 redirects, retried", retryTimes, "times, exit")
+			println("[WARN]", e.Error(), retryTimes, "times, exit")
 			break
 		}
-		println("[WARN] stopped after 10 redirects, retry", retryTimes, "times")
+		println("[WARN]", e.Error(), retryTimes, "times, exit")
 		time.Sleep(time.Second * time.Duration(retryTimes*retryTimes*retryTimes))
 	}
 
