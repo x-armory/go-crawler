@@ -96,14 +96,13 @@ func (c *Crawler) Start() {
 		if c.DurationFinally != nil {
 			ex.Try(func() {
 				c.DurationFinally(c)
+				c.Ex = nil
 			}).Catch(func(err interface{}) {
 				c.Ex = ex.Wrap(err)
 			})
-		} else {
-			if c.Ex != nil {
-				c.Ex.PrintErrorStack()
-				break
-			}
+		}
+		if c.Ex != nil {
+			break
 		}
 
 		interval := time.Now().UnixNano() - t1.UnixNano() - int64(c.TimeInterval)
@@ -124,5 +123,9 @@ func (c *Crawler) Start() {
 		}).Catch(func(err interface{}) {
 			ex.Wrap(err).PrintErrorStack()
 		})
+	} else {
+		if c.Ex != nil {
+			c.Ex.PrintErrorStack()
+		}
 	}
 }
