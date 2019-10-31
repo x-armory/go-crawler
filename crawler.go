@@ -102,7 +102,7 @@ func (c *Crawler) Start() {
 		}
 
 		// process data or err finally
-		if c.DurationFinally != nil {
+		if c.Ex == nil && c.DurationFinally != nil {
 			ex.Try(func() {
 				c.DurationFinally(c)
 			}).Catch(func(err interface{}) {
