@@ -21,6 +21,7 @@ const UnmarshalError = "unmarshal failed"
 // DataUnmarshaler：执行反序列化，由Crawler的实现类选择具体的反序列化方法，以及处理过程，可以关闭写缓存，并选用ItemFilter来挨个处理元素；
 // RequestGenerator：生成请求；
 // RequestReader：读取请求返回内容；
+// SkipUnmarshalError：true 无视UnmarshalError，打印异常后直接清空异常
 // DurationFinally：可选项，每个间隔最终执行；
 // Finally：可选项，最终执行；
 type Crawler struct {
@@ -31,8 +32,9 @@ type Crawler struct {
 	DataUnmarshaler     base.Unmarshaler
 	RequestGenerator
 	RequestReader
-	DurationFinally func(crawler *Crawler)
-	Finally         func(crawler *Crawler)
+	SkipUnmarshalError bool
+	DurationFinally    func(crawler *Crawler)
+	Finally            func(crawler *Crawler)
 }
 
 // 生成请求参数
@@ -73,7 +75,7 @@ func (c *Crawler) Start() {
 		})
 
 		// unmarshal data
-		if c.Ex != nil {
+		if c.Ex == nil {
 			ex.Try(func() {
 				// 如果目标对象超过1个，缓存io内容，用于以后读取
 				var buf []byte
@@ -85,7 +87,14 @@ func (c *Crawler) Start() {
 					if len(c.DataTarget) > 1 {
 						r2 = bytes.NewReader(buf)
 					}
-					ex.AssertNoError(c.DataUnmarshaler.Unmarshal(r2, c.DataTarget[e]), UnmarshalError)
+					unmarshalErr := c.DataUnmarshaler.Unmarshal(r2, c.DataTarget[e])
+					if unmarshalErr != nil {
+						if c.SkipUnmarshalError {
+							println("[WARN] skip unmarshal error:", unmarshalErr.Error())
+						} else {
+							ex.AssertNoError(unmarshalErr, UnmarshalError)
+						}
+					}
 				}
 			}).Catch(func(err interface{}) {
 				c.Ex = ex.Wrap(err)
