@@ -7,9 +7,10 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
-	"sync"
 	"time"
 )
+
+const UnmarshalError = "unmarshal failed"
 
 // 同步执行RequestGenerator、RequestReader、DataUnmarshaler、DataProcessor方法
 // 根据设定的间隔时间等待下次执行
@@ -54,46 +55,25 @@ func (c *Crawler) Start() {
 	ex.Assert(c.RequestGenerator != nil, "RequestGenerator cannot be nil")
 	ex.Assert(c.RequestReader != nil, "RequestReader cannot be nil")
 	ex.Assert(c.DataUnmarshaler != nil, "DataUnmarshaler cannot be nil")
-
 	rand.Seed(time.Now().UnixNano())
-crawlerLoop:
+
 	for true {
+		t1 := time.Now() //start time
 		ex.Assert(len(c.DataTarget) > 0, "DataTarget cannot be empty")
-		// 用于控制请求间隔，最少间隔c.TimeInterval，如果请求处理时间超过c.TimeInterval，则处理时间为请求间隔
-		// 然后随机再等待c.TimeIntervalAddRand
-		// 确保请求不会很频繁、规律
-		var bizFailedSig = make(chan bool)
-		var bizFailed = false
 
-		// 同步锁，用于等待业务执行结束
-		wait := sync.WaitGroup{}
-		wait.Add(1)
+		// read data
+		var r io.Reader
+		ex.Try(func() {
+			req := c.GenRequest()
+			ex.Assert(req != nil, "no more data")
+			r = c.ReadRequest(req)
+			ex.Assert(r != nil, "read data failed")
+		}).Catch(func(err interface{}) {
+			c.Ex = ex.Wrap(err)
+		})
 
-		// 异步执行业务代码
-		go func() {
-			defer func() {
-				wait.Done()
-				if bizFailed {
-					bizFailedSig <- bizFailed
-				}
-			}()
-
-			var r io.Reader
-			ex.Try(func() {
-				req := c.GenRequest()
-				if req == nil {
-					c.Ex = ex.Wrap("no more data")
-					bizFailed = true
-					return
-				}
-				r = c.ReadRequest(req)
-			}).Catch(func(err interface{}) {
-				c.Ex = ex.Wrap(err)
-				bizFailed = true
-			})
-			if bizFailed {
-				return
-			}
+		// unmarshal data
+		if c.Ex != nil {
 			ex.Try(func() {
 				// 如果目标对象超过1个，缓存io内容，用于以后读取
 				var buf []byte
@@ -105,59 +85,44 @@ crawlerLoop:
 					if len(c.DataTarget) > 1 {
 						r2 = bytes.NewReader(buf)
 					}
-					ex.AssertNoError(c.DataUnmarshaler.Unmarshal(r2, c.DataTarget[e]), "unmarshal failed")
+					ex.AssertNoError(c.DataUnmarshaler.Unmarshal(r2, c.DataTarget[e]), UnmarshalError)
 				}
 			}).Catch(func(err interface{}) {
 				c.Ex = ex.Wrap(err)
 			})
+		}
 
+		// process data or err finally
+		if c.DurationFinally != nil {
 			ex.Try(func() {
-				if c.DurationFinally != nil { // 如果定义了DurationFinally，将执行异常交给DurationFinally处理
-					c.DurationFinally(c)
-				} else {
-					if c.Ex != nil { // 如果没定义DurationFinally，且出现了执行异常，直接抛出
-						c.Ex.Throw()
-					}
-				}
+				c.DurationFinally(c)
 			}).Catch(func(err interface{}) {
 				c.Ex = ex.Wrap(err)
-				bizFailed = true
 			})
-
-			// 如果执行出现了异常，且需要忽略，需要定义DurationFinally，并吃掉执行异常
-		}()
-
-		// 等待执行异常信号，或者间隔超时
-		// 如果执行成功，则收不到异常信号，只能收到超时信号，然后开始下一轮
-		// 如果执行失败，且执行时间大于间隔时间，会提前收到超时信号，进入后续等待执行并判断流程
-		// 如果执行失败，且执行时间小于间隔时间，会及时收到异常信号并退出
-		select {
-		case <-bizFailedSig: // 收到退出信号
-			break crawlerLoop
-		case <-time.After(c.TimeInterval): // 执行到达间隔时间，此后可能执行成功，也可能失败
+		} else {
+			if c.Ex != nil {
+				c.Ex.PrintErrorStack()
+				break
+			}
 		}
 
-		// 等待业务执行结束，此时一定是到达了间隔超时时间
-		// 如果执行失败，会发出退出信号
-		// 如果执行成功，不会发出退出信号，如果尝试读取会无限等待
-		// 因此下一步使用异常状态来判断
-		wait.Wait()
-		if bizFailed {
-			break crawlerLoop
+		interval := time.Now().UnixNano() - t1.UnixNano() - int64(c.TimeInterval)
+		if interval < 0 {
+			interval = 0
 		}
-		close(bizFailedSig)
-
-		// 如果设置了随机额外间隔时间，继续等待
 		if c.TimeIntervalAddRand > 0 {
-			time.Sleep(time.Duration(rand.Int63n(int64(c.TimeIntervalAddRand))))
+			interval += rand.Int63n(int64(c.TimeIntervalAddRand))
+		}
+		if interval > 0 {
+			time.Sleep(time.Duration(interval))
 		}
 	}
 
-	ex.Try(func() {
-		if c.Finally != nil {
+	if c.Finally != nil {
+		ex.Try(func() {
 			c.Finally(c)
-		}
-	}).Catch(func(err interface{}) {
-		ex.Wrap(err).PrintErrorStack()
-	})
+		}).Catch(func(err interface{}) {
+			ex.Wrap(err).PrintErrorStack()
+		})
+	}
 }
