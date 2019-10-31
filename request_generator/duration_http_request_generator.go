@@ -15,14 +15,16 @@ import (
 // Offset：天偏移量，有些数据在一个周期内分多次发布，有些数据会延迟发布，需要往前下载；
 // LastTime：上次请求的时间点；
 // ParametersFunc：业务定制的参数转换方法，根据一个周期的开始结束时间生成具体请求，日周期的开始结束时间一样；
+// DurationIsFinishedFunc：默认永远返回true；用于判断Duration是否完成，适用于每次请求有参数范围限制的场景，同一个时间段必须拆分成多次请求；
 // IgnoreWeekend：跳过周末，通常周末没有交易数据，只有日周期生效；
 type DurationHttpRequestGenerator struct {
-	Duration       SyncDuration
-	Offset         int
-	LastTime       time.Time
-	IgnoreWeekend  bool
-	ParametersFunc DurationRequestParametersFunc
-	ready          bool
+	Duration               SyncDuration
+	Offset                 int
+	LastTime               time.Time
+	IgnoreWeekend          bool
+	ParametersFunc         DurationRequestParametersFunc
+	DurationIsFinishedFunc func() bool
+	ready                  bool
 }
 type SyncDuration int
 type DurationRequestParametersFunc func(start time.Time, end time.Time) (method string, urlStr string, headers map[string][]string, values map[string][]string)
@@ -47,6 +49,11 @@ func (g *DurationHttpRequestGenerator) GenRequest() interface{} {
 // 如果计算出的下一个周期开始时间在当前时间之后，返回无效时间段
 func (g *DurationHttpRequestGenerator) NextDuration() (start time.Time, end time.Time) {
 	if !g.ready {
+		if g.DurationIsFinishedFunc == nil {
+			g.DurationIsFinishedFunc = func() bool {
+				return true
+			}
+		}
 		// 加上偏移量后的下一天，后面再减掉一个周期，作为上次执行时间的开始时间
 		g.LastTime = g.LastTime.AddDate(0, 0, g.Offset+1)
 		// 格式化开始时间，减一个周期
@@ -70,19 +77,25 @@ func (g *DurationHttpRequestGenerator) NextDuration() (start time.Time, end time
 	var end2 time.Time
 	switch g.Duration {
 	case Year:
-		g.LastTime = g.LastTime.AddDate(1, 0, 0)
+		if g.DurationIsFinishedFunc() {
+			g.LastTime = g.LastTime.AddDate(1, 0, 0)
+		}
 		end2 = g.LastTime.AddDate(1, 0, -1)
 	case Month:
-		g.LastTime = g.LastTime.AddDate(0, 1, 0)
+		if g.DurationIsFinishedFunc() {
+			g.LastTime = g.LastTime.AddDate(0, 1, 0)
+		}
 		end2 = g.LastTime.AddDate(0, 1, -1)
 	case Day:
-		for true {
-			g.LastTime = g.LastTime.AddDate(0, 0, 1)
-			end2 = g.LastTime
-			if g.LastTime.Weekday() >= 1 && g.LastTime.Weekday() <= 5 {
-				break
+		if g.DurationIsFinishedFunc() {
+			for true {
+				g.LastTime = g.LastTime.AddDate(0, 0, 1)
+				if !g.IgnoreWeekend || (g.LastTime.Weekday() >= 1 && g.LastTime.Weekday() <= 5) {
+					break
+				}
 			}
 		}
+		end2 = g.LastTime
 	}
 	if g.LastTime.After(now) {
 		return time.Time{}, time.Time{}

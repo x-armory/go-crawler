@@ -144,3 +144,21 @@ func getDurationHttpRequestParametersFunc() DurationRequestParametersFunc {
 		return "", "", nil, nil
 	}
 }
+
+func TestDurationIsFinishedFunc(t *testing.T) {
+	lastSyncDate, _ := time.Parse("2006-01-02", "2819-07-01")
+	generator := &DurationHttpRequestGenerator{
+		Duration:       Day,
+		Offset:         0,
+		LastTime:       lastSyncDate,
+		IgnoreWeekend:  true,
+		ParametersFunc: getDurationHttpRequestParametersFunc(),
+		DurationIsFinishedFunc: func() bool {
+			return false
+		},
+	}
+	start1, _ := generator.NextDuration()
+	start2, _ := generator.NextDuration()
+	assert.Equal(t, start1, start2)
+
+}
