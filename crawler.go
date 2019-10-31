@@ -96,7 +96,6 @@ func (c *Crawler) Start() {
 		if c.DurationFinally != nil {
 			ex.Try(func() {
 				c.DurationFinally(c)
-				c.Ex = nil
 			}).Catch(func(err interface{}) {
 				c.Ex = ex.Wrap(err)
 			})
