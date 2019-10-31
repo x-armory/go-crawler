@@ -3,6 +3,7 @@ package request_reader
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/x-armory/go-crawler/util"
 	"github.com/x-armory/go-exception"
 	"io"
@@ -81,18 +82,26 @@ func (r *HttpRequestReader) ReadRequest(req interface{}) io.Reader {
 	ex.AssertNoError(e, "http do request failed")
 	ex.Assert(response.Body != nil, "response body is nil")
 	defer response.Body.Close()
-	ex.Assert(response.StatusCode < 500, "server error")
+	responseBytes, e := ioutil.ReadAll(response.Body)
+	var responseShort string
+	if e != nil {
+		responseShort = e.Error()
+	} else if len(responseBytes) <= 1024 {
+		responseShort = string(responseBytes)
+	} else {
+		responseShort = string(responseBytes[0:1024])
+	}
+
 	if response.StatusCode == 404 {
 		if !r.Ignore404 {
-			panic(404)
+			ex.Wrap(404).Throw()
 		} else {
+			println("[WARN] ignore 404")
 			return strings.NewReader("")
 		}
-	} else {
-		ex.Assert(response.StatusCode < 400, response.StatusCode)
+	} else if response.StatusCode >= 400 {
+		ex.Wrap(fmt.Sprintf("%d %s", response.StatusCode, responseShort)).Throw()
 	}
-	responseBytes, e := ioutil.ReadAll(response.Body)
-	ex.AssertNoError(e, "read response error")
 	if r.LogResponse {
 		println("[Response] %s", string(responseBytes))
 	}
