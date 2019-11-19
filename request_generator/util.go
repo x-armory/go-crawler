@@ -14,14 +14,13 @@ func ParseHttpRequest(request *Request) *http.Request {
 // 根据http request所需参数组装http request，并设置默认header，避免被反爬
 func GenRequest(method string, urlStr string, headers map[string][]string, values map[string][]string) *http.Request {
 	if method == "GET" {
-		url2 := urlStr
 		if len(values) > 0 {
 			if strings.Index(urlStr, "?") > 0 {
-				url2 += "&"
+				urlStr += "&"
 			} else {
-				url2 += "?"
+				urlStr += "?"
 			}
-			url2 += url.Values(values).Encode()
+			urlStr += url.Values(values).Encode()
 			values = nil
 		}
 	}
